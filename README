@@ -7,8 +7,11 @@ hand the cards to each successive client, taking a single photograph clearly
 showing the QR code before beginning their session.  Afterwards, after doing a 
 batch RAW conversion on the images I'll split them up into directories using 
 the QR code images, and then dump them onto a web server with a small PHP 
-script to display them to clients.  Each step of this process will be handled by
-a separate script, and I'll document them here as I go along.
+script to display them to clients.  
+
+Each step of this process will be handled by a separate script, and I'll 
+document them here as I go along.  The scripts themselves are found in the 
+scripts/ directory.
 
 gencards.py - Generates a PDF file containing the desired number of number/QR
 cards.  Usage is simply:
@@ -17,5 +20,10 @@ cards.  Usage is simply:
 
 The layout of the cards is fully customizable, but configuration is done through
 constants in the script itself.  You'll find all the relevant settings towards 
-the top of gencards.py under the section "User Parameters"
+the top of gencards.py under the section "User Parameters."  An example of a set
+of cards generated with the default settings is included in 
+examples/examplecards.pdf.
+
+This script requires python, the reportlab PDF generation library for Python, 
+and the qrencode command.
 

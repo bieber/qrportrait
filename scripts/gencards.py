@@ -57,7 +57,7 @@ QRSIZE = 1.2 * inch
 PAGESIZE = landscape(letter)
 
 # URL to print on each card
-URL = "www.cotcfamily.com/phototest"
+URL = "www.testsite.com/phototest"
 
 # Set of characters from which to generate serial numbers
 SERIALCHARS = "123456789QRXTV"
