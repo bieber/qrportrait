@@ -20,10 +20,22 @@ cards.  Usage is simply:
 
 The layout of the cards is fully customizable, but configuration is done through
 constants in the script itself.  You'll find all the relevant settings towards 
-the top of gencards.py under the section "User Parameters."  An example of a set
+the top of gencardYs.py under the section "User Parameters."  An example of a set
 of cards generated with the default settings is included in 
 examples/examplecards.pdf.
 
 This script requires python, the reportlab PDF generation library for Python, 
 and the qrencode command.
+
+sortphotos.py - Sorts photos into directories corresponding to their serial 
+number, doing RAW conversion along the way if necessary.  Usage is
+
+  sortphotos.py <input directory> <output directory>
+  
+Photos will be copied into the output directory in subdirectories named with the
+code that preceded each photo.  The input directory will be recursively 
+scanned for photographs, and if there are RAW files then they will be converted 
+using the .ufraw file found most recently in the directory tree.
+
+This script requires ZBar, ImageMagick and UFRaw (if converting RAW files).
 
