@@ -40,6 +40,13 @@ def scandir(root, ufraw = None):
     files = []
     dirs = []
     
+    # First scan for UFRAW files
+    for f in sorted(os.listdir(root)):
+        path = os.path.join(root, f)
+        
+        if os.path.splitext(path)[1].lower() == '.ufraw':
+            ufraw = path
+
     # First scan for files
     for f in sorted(os.listdir(root)):
         path = os.path.join(root, f)
@@ -47,9 +54,7 @@ def scandir(root, ufraw = None):
         if os.path.isdir(path):
             # Queueing up directories to scan after every file is checked
             dirs.append(path)
-        elif os.path.splitext(path)[1].lower() == '.ufraw':
-            ufraw = path
-        else:
+        elif os.path.splitext(path)[1].lower() != '.ufraw':
             files.append((path, ufraw))
 
     # Then recurse on directories
@@ -98,7 +103,7 @@ for (path, ufraw) in files:
             command += "--conf=" + ufraw + " "
         command += path
         os.system(command)
-        #os.remove(".temp.ufraw")
+
         
     # Otherwise just copy over the JPEG file
     else:
