@@ -78,23 +78,27 @@ if not os.path.isdir(sys.argv[2]):
         os.mkdir(sys.argv[2])
         
 serial = "missing_serial"
-serials = {"missing_serial": 0}
+serials = {"missing_serial": (0, 0)}
 imgcount = 0
 files = scandir(sys.argv[1])
 for (path, ufraw) in files:
     
+    # Flag for barcode cards
+    is_index = False
+
     # Carrying out RAW conversion if necessary
     if RAWFILES.count(os.path.splitext(path)[1].lower()) != 0:
         command = "ufraw-batch "
         command += "--silent "
         command += "--overwrite "
+        command += "--create-id=no "
         command += "--out-path=./ "
         command += "--output=.temp.jpg "
         if ufraw:
             command += "--conf=" + ufraw + " "
         command += path
         os.system(command)
-        os.remove(".temp.ufraw")
+        #os.remove(".temp.ufraw")
         
     # Otherwise just copy over the JPEG file
     else:
@@ -107,16 +111,37 @@ for (path, ufraw) in files:
     try:
         zbarout = subprocess.check_output(["zbarimg", "-q", ".temp_small.jpg"])
 
-        # check_output throws an exception if no bar code is found, so at this
+        # check_output throws an exception if no barcode is found, so at this
         # point we can assume we've found something
 
-        print zbarout
+        for line in zbarout.split("\n"):
+            line = line.strip()
+            if line[0:8] == "QR-Code:":
+                serial = line[8:]
+                is_index = True
+                if not serial in serials:
+                    if not os.path.exists(os.path.join(sys.argv[2], serial)):
+                        os.mkdir(os.path.join(sys.argv[2], serial))
+                    serials[serial] = (0, 0)
 
     except subprocess.CalledProcessError:
         pass
     
+    # Coming up with the new filename
+    new_path = ""
+    if is_index:
+        new_path = os.path.join(sys.argv[2], serial,
+                                "index" + str(serials[serial][1]) + ".jpg")
+        serials[serial] = (serials[serial][0], serials[serial][1] + 1)
+    else:
+        new_path = os.path.join(sys.argv[2], serial, 
+                                "img" + str(serials[serial][0]) + ".jpg")
+        serials[serial] = (serials[serial][0] + 1, serials[serial][1])
+
+    # Moving the temp file
+    shutil.move(".temp.jpg", new_path)
+
     # Cleaning up
-    os.remove(".temp.jpg")
     os.remove(".temp_small.jpg")
 
     imgcount += 1
