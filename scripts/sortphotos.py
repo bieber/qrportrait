@@ -35,7 +35,6 @@ RAWFILES = [".dng", ".raw", ".nef", ".raf", ".orf", ".srf", ".sr2", ".arw",
 ###
 
 # Reads a directory and returns a list of (filename, .ufraw file) pairs
-# For JPG files, the second element of the pair is None
 def scandir(root, ufraw = None):
     files = []
     dirs = []
@@ -47,7 +46,7 @@ def scandir(root, ufraw = None):
         if os.path.splitext(path)[1].lower() == '.ufraw':
             ufraw = path
 
-    # First scan for files
+    # Scan for files
     for f in sorted(os.listdir(root)):
         path = os.path.join(root, f)
         
