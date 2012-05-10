@@ -22,6 +22,7 @@
 ///
 
 // Path to the photos directory on local server
+// Ensure that the server has write access for thumbnails
 define("PHOTOS_LOCAL", "../../examples/sorted_photos");
 
 // Path to the photos directory on the web
@@ -29,6 +30,10 @@ define("PHOTOS_WEB", "http://qrphotos");
 
 // Site title
 define("TITLE", "QrPortrait");
+
+// Thumbnail dimension (fits into square frame)
+define("THUMBSIZE", 300);
+define("PAGEWIDTH", 800);
 
 /////
 // Common header info
@@ -41,32 +46,70 @@ define("TITLE", "QrPortrait");
 <html xmlns="http://www.w3.org/1999/xhtml">
 
     <head>
-        <?php if($_GET['serial']){ ?>
-            <title><?php echo TITLE; ?>: View Photos</title>
-        <?php }else{ ?>
-            <title><?php echo TITLE; ?></title>
-        <?php } ?>
+<?php if($_GET['serial']){ ?>
+        <title><?php echo TITLE; ?>: View Photos</title>
+<?php }else{ ?>
+        <title><?php echo TITLE; ?></title>
+<?php } ?>
         
         <style type="text/css">
-            
+                
+                body
+                {
+                    background-color:#fafafa;
+                }
+                
                 #container
                 {
                     width:800px;
                     position:absolute;
                     left:50%;
                     margin-left:-400px;
-                    border: 1px solid black;
+                    border:1px solid black;
+                    background-color:white;
                 }
                 
                 #title h1
                 {
                     margin-left:50px;
-                    margin-top: 20px;
+                    margin-top:20px;
                 }
                 
                 #form
                 {
-                    padding: 20px 20px 20px 20px;
+                    padding:20px 20px 20px 20px;
+                }
+                
+                ul.photos
+                {
+                    padding:0;
+                    list-style:none;
+                    margin:20px auto 0;
+                    width:700px;
+                }
+                
+                li.photo
+                {
+                    list-style:none;
+                    float:left;
+                    padding:0;
+                    margin: 50px 30px 50px 30px;
+                }
+                
+                li.photo a
+                {
+                    display:block;
+                    width:300px;
+                    height:300px;
+                    padding:none;
+                    margin:none;
+                    text-align:center;
+                }
+                
+                li.photo img
+                {
+                    margin:0 auto;
+                    text-align:center;
                 }
             
         </style>
@@ -74,29 +117,130 @@ define("TITLE", "QrPortrait");
     </head>
     
     <body>
-        <?php
-        /////
-        // Greeting page
-        ///
-        
-        if(!$_GET['serial']){
-        ?>
         <div id = "container">
+<?php
+            /////
+            // Greeting page
+            ///
+            
+            if(!$_GET['serial']){
+            ?>
+
             <div id="title">
                 <h1><?php echo TITLE; ?></h1>
             </div>
             
             <div id="form">
-                <form method="get" action="<?php echo $_SERVER['REQUEST_URI']; ?>">
-                    <label for="serial">Enter your code to view your photos:</label>
+                <form method="get" 
+                      action="<?php echo $_SERVER['REQUEST_URI']; ?>">
+                    <label for="serial">
+                        Enter your code to view your photos:
+                    </label>
                     <input type="text" name="serial" id="serial" />
                     <input type="submit" value="View photos" />
                 </form>
             </div>
-        </div>
+
         
-        <?php
-        }
-        ?>
+<?php
+            }
+            else
+            {
+                // Determining whether the code exists
+                $validCode = false;
+                foreach(scandir(PHOTOS_LOCAL) as $entry)
+                {
+                    if($entry == '.' || $entry == '..')
+                        continue;
+                    
+                    if(strtoupper(trim($entry)) 
+                       == strtoupper(trim($_GET['serial'])))
+                        $validCode = true;
+                }
+                
+                // If the code does exist, display the images
+                
+                $files = scandir(PHOTOS_LOCAL . '/' 
+                                 . trim(strtoupper($_GET['serial'])));
+                $fileURIs = array();
+                foreach($files as $k => $v)
+                {
+                    if($v == '.' || $v == '..' || substr($v, 0, 5) == 'thumb')
+                        continue;
+                    
+                    $photoPath = PHOTOS_LOCAL . '/'
+                                 . trim(strtoupper($_GET['serial']))
+                                 . '/' . $v;    
+                    $thumbPath = PHOTOS_LOCAL . '/' 
+                                 . trim(strtoupper($_GET['serial'])) 
+                                 . '/thumb' . $v;
+                    if(!file_exists($thumbPath))
+                    {
+                        // If the thumbnail doesn't already exist, create one
+                        $orig = imagecreatefromjpeg($photoPath);
+                        
+                        // Calculating new dimensions
+                        $sw = imagesx($orig);
+                        $sh = imagesy($orig);
+                        $dw = 0;
+                        $dh = 0;
+                        
+                        if($sw > $sh)
+                        {
+                            $dw = THUMBSIZE;
+                            $dh = THUMBSIZE * $sh / $sw;
+                        }
+                        else
+                        {
+                            $dh = THUMBSIZE;
+                            $dw = THUMBSIZE * $sw / $sh;
+                        }
+                        
+                        // Allocating the new image and resizing
+                        $dest = imagecreatetruecolor($dw, $dh);
+                        imagecopyresized($dest, $orig, 
+                                         0, 0, 0, 0, 
+                                         $dw, $dh, $sw, $sh);
+                        
+                        // Saving and freeing memory
+                        imagejpeg($dest, $thumbPath);
+                        imagedestroy($orig);
+                        imagedestroy($dest);
+                       
+                    }
+
+                    // Storing image and thumb location
+                    $photoWebPath = PHOTOS_WEB . '/'
+                                    . strtoupper(trim($_GET['serial']))
+                                    . '/' . $v;
+                    $thumbWebPath = PHOTOS_WEB . '/' 
+                                    . strtoupper(trim($_GET['serial']))
+                                    . '/thumb' . $v;
+                                    
+                    if(substr($v, 0, 5) != "index" || $_GET['index'])
+                        $fileURIs[$k] = array('photo' => $photoWebPath,
+                                              'thumb' => $thumbWebPath);
+                }
+                /////
+                // Image display
+                ///
+            ?>
+            <div id="title">
+                <h1><?php echo TITLE; ?></h1>
+            </div>
+            
+            <ul id="photos">
+<?php foreach($fileURIs as $file){ ?>
+                <li class="photo">
+                    <a href="<?php echo $file['photo']; ?>">
+                        <img src="<?php echo $file['thumb']; ?>" alt="Photo" />
+                    </a>
+                </li>
+<?php } ?>
+            </ul>
+<?php
+            }
+            ?>
+        </div> 
     </body>
 </html>
