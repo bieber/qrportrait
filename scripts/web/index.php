@@ -36,6 +36,23 @@ define("THUMBSIZE", 300);
 define("PAGEWIDTH", 800);
 
 /////
+// Reused elements
+///
+
+$formCode = <<<EOD
+            <div id="form">
+                <form method="get" 
+                      action="{$_SERVER['REQUEST_URI']}">
+                    <label for="serial">
+                        Enter your code to view your photos:
+                    </label>
+                    <input type="text" name="serial" id="serial" />
+                    <input type="submit" value="View photos" />
+                </form>
+            </div>
+EOD;
+
+/////
 // Common header info
 ///
 
@@ -56,7 +73,7 @@ define("PAGEWIDTH", 800);
                 
                 body
                 {
-                    background-color:#fafafa;
+                    background-color:#f2f2f2;
                 }
                 
                 #container
@@ -77,6 +94,7 @@ define("PAGEWIDTH", 800);
                 
                 #form
                 {
+                    margin-left:50px;
                     padding:20px 20px 20px 20px;
                 }
                 
@@ -84,7 +102,7 @@ define("PAGEWIDTH", 800);
                 {
                     padding:0;
                     list-style:none;
-                    margin:20px auto 0;
+                    margin:0px auto 0;
                     width:700px;
                 }
                 
@@ -93,7 +111,7 @@ define("PAGEWIDTH", 800);
                     list-style:none;
                     float:left;
                     padding:0;
-                    margin: 50px 30px 50px 30px;
+                    margin: 30px 25px 0px 25px;
                 }
                 
                 li.photo a
@@ -110,6 +128,12 @@ define("PAGEWIDTH", 800);
                 {
                     margin:0 auto;
                     text-align:center;
+                }
+                
+                p
+                {
+                    margin-left:50px;
+                    margin-top:50px;
                 }
             
         </style>
@@ -130,16 +154,7 @@ define("PAGEWIDTH", 800);
                 <h1><?php echo TITLE; ?></h1>
             </div>
             
-            <div id="form">
-                <form method="get" 
-                      action="<?php echo $_SERVER['REQUEST_URI']; ?>">
-                    <label for="serial">
-                        Enter your code to view your photos:
-                    </label>
-                    <input type="text" name="serial" id="serial" />
-                    <input type="submit" value="View photos" />
-                </form>
-            </div>
+<?php echo $formCode; ?>
 
         
 <?php
@@ -159,75 +174,83 @@ define("PAGEWIDTH", 800);
                 }
                 
                 // If the code does exist, display the images
-                
-                $files = scandir(PHOTOS_LOCAL . '/' 
-                                 . trim(strtoupper($_GET['serial'])));
-                $fileURIs = array();
-                foreach($files as $k => $v)
+                if($validCode)
                 {
-                    if($v == '.' || $v == '..' || substr($v, 0, 5) == 'thumb')
-                        continue;
-                    
-                    $photoPath = PHOTOS_LOCAL . '/'
-                                 . trim(strtoupper($_GET['serial']))
-                                 . '/' . $v;    
-                    $thumbPath = PHOTOS_LOCAL . '/' 
-                                 . trim(strtoupper($_GET['serial'])) 
-                                 . '/thumb' . $v;
-                    if(!file_exists($thumbPath))
+                    $files = scandir(PHOTOS_LOCAL . '/' 
+                                     . trim(strtoupper($_GET['serial'])));
+                    $fileURIs = array();
+                    foreach($files as $k => $v)
                     {
-                        // If the thumbnail doesn't already exist, create one
-                        $orig = imagecreatefromjpeg($photoPath);
+                        if($v == '.' || $v == '..' 
+                           || substr($v, 0, 5) == 'thumb')
+                            continue;
                         
-                        // Calculating new dimensions
-                        $sw = imagesx($orig);
-                        $sh = imagesy($orig);
-                        $dw = 0;
-                        $dh = 0;
-                        
-                        if($sw > $sh)
+                        $photoPath = PHOTOS_LOCAL . '/'
+                                     . trim(strtoupper($_GET['serial']))
+                                     . '/' . $v;    
+                        $thumbPath = PHOTOS_LOCAL . '/' 
+                                     . trim(strtoupper($_GET['serial'])) 
+                                     . '/thumb' . $v;
+                        if(!file_exists($thumbPath))
                         {
-                            $dw = THUMBSIZE;
-                            $dh = THUMBSIZE * $sh / $sw;
+                            // If the thumbnail doesn't exist, create one
+                            $orig = imagecreatefromjpeg($photoPath);
+                            
+                            // Calculating new dimensions
+                            $sw = imagesx($orig);
+                            $sh = imagesy($orig);
+                            $dw = 0;
+                            $dh = 0;
+                            
+                            if($sw > $sh)
+                            {
+                                $dw = THUMBSIZE;
+                                $dh = THUMBSIZE * $sh / $sw;
+                            }
+                            else
+                            {
+                                $dh = THUMBSIZE;
+                                $dw = THUMBSIZE * $sw / $sh;
+                            }
+                            
+                            // Allocating the new image and resizing
+                            $dest = imagecreatetruecolor($dw, $dh);
+                            imagecopyresized($dest, $orig, 
+                                             0, 0, 0, 0, 
+                                             $dw, $dh, $sw, $sh);
+                            
+                            // Saving and freeing memory
+                            imagejpeg($dest, $thumbPath);
+                            imagedestroy($orig);
+                            imagedestroy($dest);
+                           
                         }
-                        else
-                        {
-                            $dh = THUMBSIZE;
-                            $dw = THUMBSIZE * $sw / $sh;
-                        }
-                        
-                        // Allocating the new image and resizing
-                        $dest = imagecreatetruecolor($dw, $dh);
-                        imagecopyresized($dest, $orig, 
-                                         0, 0, 0, 0, 
-                                         $dw, $dh, $sw, $sh);
-                        
-                        // Saving and freeing memory
-                        imagejpeg($dest, $thumbPath);
-                        imagedestroy($orig);
-                        imagedestroy($dest);
-                       
-                    }
 
-                    // Storing image and thumb location
-                    $photoWebPath = PHOTOS_WEB . '/'
-                                    . strtoupper(trim($_GET['serial']))
-                                    . '/' . $v;
-                    $thumbWebPath = PHOTOS_WEB . '/' 
-                                    . strtoupper(trim($_GET['serial']))
-                                    . '/thumb' . $v;
-                                    
-                    if(substr($v, 0, 5) != "index" || $_GET['index'])
-                        $fileURIs[$k] = array('photo' => $photoWebPath,
-                                              'thumb' => $thumbWebPath);
-                }
-                /////
-                // Image display
-                ///
-            ?>
+                        // Storing image and thumb location
+                        $photoWebPath = PHOTOS_WEB . '/'
+                                        . strtoupper(trim($_GET['serial']))
+                                        . '/' . $v;
+                        $thumbWebPath = PHOTOS_WEB . '/' 
+                                        . strtoupper(trim($_GET['serial']))
+                                        . '/thumb' . $v;
+                                        
+                        if(substr($v, 0, 5) != "index" || $_GET['index'])
+                            $fileURIs[$k] = array('photo' => $photoWebPath,
+                                                  'thumb' => $thumbWebPath);
+                    }
+                    /////
+                    // Image display
+                    ///
+                    
+                ?>
             <div id="title">
                 <h1><?php echo TITLE; ?></h1>
             </div>
+            
+            <p>
+                To view a photo, click on it.  To save, right-click on an image 
+                and choose "save link as."
+            </p> 
             
             <ul id="photos">
 <?php foreach($fileURIs as $file){ ?>
@@ -238,7 +261,24 @@ define("PAGEWIDTH", 800);
                 </li>
 <?php } ?>
             </ul>
+            
 <?php
+                }else{
+                    /////
+                    // Code not found error page
+                    ///
+                ?>
+            <div id="title">
+                <h1><?php echo TITLE; ?></h1>
+            </div>
+            
+            <p>
+                Sorry, we couldn't find any photos that matched your code.  
+                Double check your card and try entering it again.
+            </p>
+            
+<?php echo $formCode; ?>
+<?php           }
             }
             ?>
         </div> 
