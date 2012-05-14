@@ -39,3 +39,15 @@ using the .ufraw file found most recently in the directory tree.
 
 This script requires ZBar, ImageMagick and UFRaw (if converting RAW files).
 
+genthumbs.py - Generates thumbnails for a sorted set of photos.  Usage is
+
+    genthumbs.py <input directory> <width> <height>
+    
+Thumbnails will be generated such that width x height is the maximum size.  This
+script generates thumbnails named to match the web viewer's expectations.  It's 
+generally a good idea to use this script to generate thumbnails rather than 
+letting the web viewer do it, because they're better quality this way and 
+thumbnail generation can seriously slow down the web viewer, potentially 
+running you up against PHP's time and memory limits as well.
+
+This script requires ImageMagick.
