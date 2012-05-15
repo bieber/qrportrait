@@ -32,12 +32,14 @@ def scandir(root):
     # Scan for files
     for f in sorted(os.listdir(root)):
         path = os.path.join(root, f)
-        thumbpath = os.path.join(root, 'thumb' + f)
+        thumbname = os.path.splitext(f)[0] + '_thumb' + os.path.splitext(f)[1]
+        thumbpath = os.path.join(root, thumbname)
         
         if os.path.isdir(path):
             # Queueing up directories to scan after every file is checked
             dirs.append(path)
-        elif os.path.splitext(path)[1].lower() == '.jpg' and f[0:5] != 'thumb':
+        elif (os.path.splitext(path)[1].lower() == '.jpg' 
+              and os.path.splitext(path)[0][-5:] != 'thumb'):
             files.append((path, thumbpath))
 
     # Then recurse on directories

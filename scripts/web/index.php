@@ -181,8 +181,10 @@ EOD;
                     $fileURIs = array();
                     foreach($files as $k => $v)
                     {
+                        $info = pathinfo($v);
+
                         if($v == '.' || $v == '..' 
-                           || substr($v, 0, 5) == 'thumb')
+                           || substr($info['filename'], -5) == 'thumb')
                             continue;
                         
                         $photoPath = PHOTOS_LOCAL . '/'
@@ -190,7 +192,8 @@ EOD;
                                      . '/' . $v;    
                         $thumbPath = PHOTOS_LOCAL . '/' 
                                      . trim(strtoupper($_GET['serial'])) 
-                                     . '/thumb' . $v;
+                                     . '/' . $info['filename'] . '_thumb.' 
+                                     . $info['extension'];
                         if(!file_exists($thumbPath))
                         {
                             // If the thumbnail doesn't exist, create one
@@ -232,7 +235,8 @@ EOD;
                                         . '/' . $v;
                         $thumbWebPath = PHOTOS_WEB . '/' 
                                         . strtoupper(trim($_GET['serial']))
-                                        . '/thumb' . $v;
+                                        . '/' . $info['filename'] . '_thumb.'
+                                        . $info['extension'];
                                         
                         if(substr($v, 0, 5) != "index" || $_GET['index'])
                             $fileURIs[$k] = array('photo' => $photoWebPath,
